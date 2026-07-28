@@ -1,0 +1,36 @@
+{
+  "name": "agent-rails",
+  "version": "0.1.0",
+  "description": "Installer for the AgentRails Agent Skills (agentrails-design, agentrails-build, agentrails-build-validation) across Claude Code, Google Antigravity, Cursor, ZCode, Kimi Code CLI, and other Agent-Skills-compatible tools.",
+  "license": "MIT",
+  "author": "Altepetl",
+  "homepage": "https://github.com/Altepetl/AgentRails#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Altepetl/AgentRails.git"
+  },
+  "bin": {
+    "agent-rails": "./bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "skills/",
+    "templates/",
+    "README.md",
+    "PRD.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "agent-skills",
+    "claude-code",
+    "cursor",
+    "antigravity",
+    "zcode",
+    "kimi",
+    "rail",
+    "installer"
+  ]
+}

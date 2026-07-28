@@ -1,0 +1,32 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Python (used by skill-creator's eval tooling)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node (in case any tooling pulls it in)
+node_modules/
+
+# Claude Code local, per-machine settings — never shared
+.claude/settings.local.json
+
+# Local sandbox for Rails built here during development/testing.
+# Real Rails belong in their own repos, not inside AgentRefinery — see
+# CONTRIBUTE.md. Anything under sandbox/ is throwaway.
+/sandbox/

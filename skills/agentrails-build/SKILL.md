@@ -1,6 +1,6 @@
 ---
 name: agentrails-build
-description: Compiles a Rail's context/ bundle (Backbone.md, Workflow.md, Readme.md — already disambiguated by agentrails-design) into the runnable process-name skill that executes the process, progressively and resumably. Deterministic — invoke this only after agentrails-design has produced a context/ bundle for the process-name in question, never on a raw process description. Use whenever the user wants to turn a finished Rail context bundle into an actual runnable skill, says the design/context docs are approved and ready to build, or asks to "build the Rail" / "package process-name".
+description: Compiles a Rail's context/ bundle (Backbone.md, Workflow.md, Readme.md — already disambiguated by agentrails-design) into the runnable process-name skill that executes the process, progressively and resumably, plus the rail.mjs runtime harness that owns the tracking file. Deterministic — invoke this only after agentrails-design has produced a context/ bundle for the process-name in question, never on a raw process description. Use whenever the user wants to turn a finished Rail context bundle into an actual runnable skill, says the design/context docs are approved and ready to build, or asks to "build the Rail" / "package process-name".
 ---
 
 # agentrails-build
@@ -8,9 +8,10 @@ description: Compiles a Rail's context/ bundle (Backbone.md, Workflow.md, Readme
 By the time you run, all ambiguity in this Rail was already resolved by
 `agentrails-design`. Your job is a mechanical transformation: turn
 `context/Backbone.md` + `context/Workflow.md` + `context/Readme.md` into a
-runnable `process-name/SKILL.md`. Do not re-interpret or second-guess the
-context documents — if something in them looks ambiguous or wrong, stop and
-tell the user to fix it via `agentrails-design` rather than resolving it
+runnable `process-name/SKILL.md`, and generate the `rail.mjs` runtime
+harness alongside it. Do not re-interpret or second-guess the context
+documents — if something in them looks ambiguous or wrong, stop and tell
+the user to fix it via `agentrails-design` rather than resolving it
 yourself here. Silently patching ambiguity at this stage would defeat the
 reason design and build are separate steps.
 
@@ -22,7 +23,8 @@ This keeps every Rail-produced skill consistent with the same packaging
 conventions as every other Agent Skill, instead of drifting into a
 bespoke format. If `skill-creator` isn't available in this environment,
 stop and tell the user it's a hard requirement rather than improvising a
-workaround.
+workaround. (Only the `SKILL.md` goes through skill-creator — `rail.mjs`
+is a plain script you generate directly, per Step 2.)
 
 ## Inputs
 
@@ -43,12 +45,35 @@ Read `Backbone.md`, `Workflow.md`, and `Readme.md`. Confirm every step in
 step that doesn't trace back to Backbone.md, that's a defect from the design
 phase; stop and report it rather than silently dropping or fixing the step.
 
-## Step 2 — Compose the SKILL.md content to hand to skill-creator
+## Step 2 — Generate rail.mjs
+
+Write `<process-name>/rail.mjs`: the runtime harness, a single
+zero-dependency Node.js script (built-in modules only, Node >= 18) with
+the `Workflow.md` step list baked in as data. It owns **every** write to
+`output-process-name/ProcessTracking.md` — the executing agent never
+edits that file by hand, so timestamps are real and every status change
+is an explicit, logged harness call. Exactly three subcommands:
+
+- `node rail.mjs init` — seed `ProcessTracking.md` (schema `STATUS |
+  AGENT | STEP | DETAILS | START | END`) with one empty-STATUS row per
+  Workflow.md step. No-op if the file already exists (resumability).
+- `node rail.mjs start <step>` — stamp START (ISO timestamp) on that
+  step's row.
+- `node rail.mjs finish <step> --ok|--error [--details "..."] [--agent
+  "<model>"]` — stamp END, STATUS (`✅`/`❌`), DETAILS, and AGENT on that
+  step's row.
+
+Generating this file is mechanical: the step list is copied from
+`Workflow.md` and the script body is fixed. It is a plain script, not an
+Agent Skill — do **not** route it through `skill-creator`.
+
+## Step 3 — Compose the SKILL.md content to hand to skill-creator
 
 The skill you're producing is named exactly `<process-name>`. Its purpose:
 execute the process defined by `Workflow.md`, progressively and resumably,
-writing live progress to a tracking file, with a clean way to run the whole
-process again from scratch once a pass is fully complete.
+with all progress writes going through `rail.mjs`, with a per-step
+mechanical gate, and with a clean way to run the whole process again from
+scratch once a pass is fully complete.
 
 Give `skill-creator` the following as the skill's required behavior — it
 must end up in the generated `process-name/SKILL.md` body, adapted to
@@ -57,48 +82,56 @@ must end up in the generated `process-name/SKILL.md` body, adapted to
 ### a. The fixed step sequence
 
 Transcribe `Workflow.md`'s steps verbatim (in order, with their fixed core /
-judgment zone split and Backbone refs). The executing agent
-follows this sequence exactly — it does not invent, skip, or reorder steps,
-per `Readme.md`'s precedence rules and escalation rule (which must also be
-carried into the generated skill: stop and ask the user when a step's
-fixed core can't be satisfied).
+judgment zone split, Backbone refs, and each fixed core's verifier kind).
+The executing agent follows this sequence exactly — it does not invent,
+skip, or reorder steps, per `Readme.md`'s precedence rules and escalation
+rule (which must also be carried into the generated skill: stop and ask
+the user when a step's fixed core can't be satisfied).
 
-### b. ProcessTracking.md
+### b. Harness-driven tracking (ProcessTracking.md)
 
 Lives in `output-process-name/`, schema: `STATUS | AGENT | STEP | DETAILS |
-START | END`.
+START | END` — STATUS `✅` done, `❌` error/blocked, empty = pending; AGENT
+is which model/agent executed the step; DETAILS is problems found / notes;
+START/END are timestamps.
 
-- STATUS: `✅` done, `❌` error/blocked, empty = pending.
-- AGENT: which model/agent executed that step — useful for debugging a
-  run and for comparing, after the fact, how different models handled the
-  same fixed path.
-- STEP: short step name, matching a Workflow.md step.
-- DETAILS: problems found / notes, empty if none.
-- START/END: timestamps.
-
-Generate this file (one row per Workflow.md step, empty STATUS) before
-execution starts, if it doesn't already exist. Write/flush per step, before
-moving to the next one — never hold it open for the whole run, so progress
-is visible live.
+**Every write to this file is a `node rail.mjs` call** (`init` / `start` /
+`finish`, per Step 2) — the executing agent never opens or edits it
+directly. Because the harness writes/flushes per call, progress is
+visible live, and a row claiming `✅` is a harness-stamped claim that
+`checks.mjs` can later contradict — not a diary entry to be trusted at
+face value.
 
 ### c. The state machine the generated skill must implement
 
 ```
 if ProcessTracking.md doesn't exist:
-    generate task list from Workflow.md -> write with empty STATUS
+    node rail.mjs init
 
 # Phase 1 — advance pending steps
 while a row has empty STATUS:
-    execute it (START -> do -> END + STATUS + DETAILS)
+    node rail.mjs start <step>
+    execute the step's fixed core + judgment zone
+    # Per-step gate — mechanical verification before advancing:
+    if checks.mjs exists (at the Rail bundle root) and covers this step:
+        run node checks.mjs --step <N>
+        exit 0 required to pass the gate; on failure, fix and re-run,
+        or treat as an error row (Phase 2)
+    else:
+        # fallback: checks.mjs not built yet (agentrails-build-validation
+        # hasn't run) — self-check the step's written verification and
+        # note "agent-verified only, no mechanical gate" in DETAILS.
+        # This is the weak mode; say so, don't hide it.
+    node rail.mjs finish <step> --ok|--error [--details "..."] [--agent "<model>"]
 
 # Phase 2 — resolve own flagged errors
 while a row has STATUS = error or non-empty DETAILS:
-    retry that step, update STATUS/DETAILS/END
+    retry that step (start -> execute -> gate -> finish), updating the row
 
 # Phase 3 — consume feedback from a prior validation run
 if ValidationTracking.md exists:
     for each row with non-empty DETAILS (gap/error reported by validation):
-        re-execute the corresponding process step to resolve it
+        re-execute the corresponding process step (with its gate) to resolve it
         # this skill never writes to ValidationTracking.md — read-only.
         # Only process-name-validation writes/clears its own file.
 
@@ -109,6 +142,8 @@ if ProcessTracking.md fully OK and (ValidationTracking.md doesn't exist or fully
     if yes:
         delete the entire contents of output-process-name/
         (ProcessTracking.md, ValidationTracking.md, and every deliverable)
+        # rail.mjs and checks.mjs live at the bundle root, outside
+        # output-process-name/ — they survive a restart untouched.
         re-run the whole process from Phase 1, as if for the first time
     if no:
         stop
@@ -127,9 +162,9 @@ explicitly: if a step's fixed core cannot be satisfied as written, the
 agent stops and asks the user. It does not guess, skip, or substitute its
 own judgment for what the fixed core requires.
 
-## Step 3 — Invoke skill-creator
+## Step 4 — Invoke skill-creator
 
-Hand skill-creator the composed spec from Step 2 as the target skill's
+Hand skill-creator the composed spec from Step 3 as the target skill's
 required behavior, with:
 - **name**: `<process-name>`
 - **description**: what the process does (drawn from `Backbone.md`'s
@@ -137,16 +172,18 @@ required behavior, with:
   process end to end, progressively and resumably; use when the user wants
   to execute, continue, or restart the <process-name> process."
 - **output path**: `<process-name>/process-name/SKILL.md`, alongside the
-  `context/` and `output-process-name/` directories for this Rail.
+  `context/`, `rail.mjs`, and `output-process-name/` entries for this Rail.
 
 Let skill-creator handle the actual `SKILL.md` scaffolding and packaging
 conventions — your job was composing the correct, complete content, not
 formatting it.
 
-## Step 4 — Confirm and hand back
+## Step 5 — Confirm and hand back
 
-Once skill-creator has produced `process-name/SKILL.md`, tell the user it's
-ready to run, and remind them that `agentrails-build-validation` still
-needs to run against `context/Validation.md` + `context/Backbone.md` to
-produce `process-name-validation` before this Rail's execution/validation
-cycle is complete.
+Once skill-creator has produced `process-name/SKILL.md` and `rail.mjs` is
+in place, tell the user it's ready to run, and remind them that
+`agentrails-build-validation` still needs to run against
+`context/Validation.md` + `context/Backbone.md` to produce
+`process-name-validation` and `checks.mjs` before this Rail's
+execution/validation cycle is complete — until then, the per-step gate
+runs in its weaker, agent-judged fallback mode.

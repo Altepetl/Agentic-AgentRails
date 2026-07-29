@@ -70,3 +70,52 @@ accordingly (`agentrails-design`, `agentrails-build`,
 2. Everything else previously open (umbrella noun for the produced
    artifact, README-vs-templates sequencing, the 3 meta-command skills,
    the project split) has been resolved — see `PRD.md` §3 and §6–§9.
+
+
+## 2026-07-29 — The mechanical verification layer
+
+A design review surfaced a structural weakness in the original spec: the
+central promise ("the same path, regardless of which model runs it") was
+guaranteed by no mechanism — only by natural-language instructions that
+another LLM had to obey. Worse, `process-name-validation` checked the
+*destination* (deliverables in `output-process-name/`), not the *path*;
+the only record of the path (`ProcessTracking.md`) was self-reported by
+the very agent being checked; and the validator was itself an LLM reading
+prose, so even detection of deviations varied by model.
+
+**Decision**: add a mechanical verification layer (PRD.md §4.1), keeping
+the judgment zone intact:
+
+- Every check (Workflow fixed-core verifications and Validation checklist
+  items) is classified by **verifier kind** at design time:
+  `verifier: script` (mechanically checkable — the default to aim for) or
+  `verifier: agent` (requires semantic judgment — last resort, always
+  reported as a soft guarantee).
+- `verifier: script` checks are written in a fixed **assertion
+  vocabulary** (PRD.md §8.7: `exists`, `not-exists`, `contains`,
+  `not-contains`, `matches`, `count-at-least`), so the deterministic build
+  commands can compile them into executable code without interpreting
+  prose — preserving the "only agentrails-design does reasoning"
+  architecture.
+- `agentrails-build` now also generates **`rail.mjs`** (runtime harness;
+  owns all writes to `ProcessTracking.md` via `init`/`start`/`finish`, so
+  the tracking file is harness-stamped claims, not a self-written diary).
+- `agentrails-build-validation` now also generates **`checks.mjs`**
+  (mechanical checker compiled from the checklist's script items;
+  `--step N` powers the per-step gate in `process-name`'s Phase 1; also
+  flags divergences where a tracking row claims done but the step's
+  script checks fail).
+- Validation becomes **mechanical-first** with a **tiered report**:
+  mechanically verified (hard guarantee) / agent-verified (soft
+  guarantee, labeled) / failed.
+- The product premise was reformulated accordingly (PRD.md §1, README):
+  not "the same path is guaranteed" but "the same verifiable milestones,
+  with the largest possible surface verified mechanically, regardless of
+  which model runs it."
+
+**Honest ceiling, recorded in PRD.md §4.1 and §17**: this makes deviation
+detectable with objective evidence and makes the honest path the easiest
+path, but a SKILL.md is still prose — true prevention requires
+host-level hooks (platform-specific, out of scope for the portable Agent
+Skills format), tracked as open item 2 in PRD.md §17. Extending the
+assertion vocabulary once real Rails exercise it is open item 3.

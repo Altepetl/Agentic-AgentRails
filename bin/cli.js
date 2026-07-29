@@ -19,11 +19,24 @@ const readline = require('readline');
 
 const PACKAGE_ROOT = path.join(__dirname, '..');
 const SKILLS_SOURCE_DIR = path.join(PACKAGE_ROOT, 'skills');
+const TEMPLATES_SOURCE_DIR = path.join(PACKAGE_ROOT, 'templates');
 const SKILL_NAMES = [
   'agentrails-design',
   'agentrails-build',
   'agentrails-build-validation',
 ];
+
+// agentrails-design is the only one of the 3 commands that reads templates/
+// at runtime (see skills/agentrails-design/SKILL.md, Step 1). templates/
+// lives at the AgentRails repo root, outside every skills/<name>/ directory,
+// so it is never picked up by the plain per-skill copyDirRecursive() below.
+// Without this, an installed agentrails-design has no way to find the base
+// templates once it's copied out of a clone of this repo — bundle a copy of
+// templates/ inside the installed agentrails-design skill itself, so it's
+// self-contained no matter which platform/location it ends up in.
+const SKILL_EXTRA_DIRS = {
+  'agentrails-design': [{ src: TEMPLATES_SOURCE_DIR, destSubdir: 'templates' }],
+};
 
 // Install paths confirmed against each platform's own docs at the time this
 // installer was written. Conventions in this space move fast — if a target
@@ -219,6 +232,9 @@ async function runInstall(args) {
       const dest = path.join(destRoot, skillName);
       const existed = fs.existsSync(dest);
       copyDirRecursive(src, dest);
+      for (const extra of SKILL_EXTRA_DIRS[skillName] || []) {
+        copyDirRecursive(extra.src, path.join(dest, extra.destSubdir));
+      }
       console.log(`- ${platform.label}: ${existed ? 'updated' : 'installed'} ${skillName} -> ${dest}`);
     }
   }

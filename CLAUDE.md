@@ -56,10 +56,19 @@ AgentRails/
 (Full glossary: `PRD.md` §16.)
 
 - **Rail** — the product: a `context/` bundle (5 documents) + a matched
-  pair of runnable Agent Skills, for a given `process-name`.
+  pair of runnable Agent Skills + a matched pair of harness scripts
+  (`rail.mjs`, `checks.mjs`), for a given `process-name`.
 - **Fixed core** — the invariant, verifiable part of a Workflow step.
 - **Judgment zone** — the part of a step left to the executing agent's
   judgment.
+- **Verifier kind** — every check is `verifier: script` (verified by
+  code, written in the fixed assertion vocabulary, PRD.md §8.7) or
+  `verifier: agent` (verified by LLM judgment, always a soft guarantee).
+  See PRD.md §4.1.
+- **`rail.mjs` / `checks.mjs`** — per-Rail harness scripts at the bundle
+  root (plain zero-dependency Node, not Agent Skills): `rail.mjs` owns
+  all `ProcessTracking.md` writes; `checks.mjs` is the mechanical checker
+  that gates each step and anchors validation's tiered report.
 - **`process-name`** — the durable, user-supplied identifier for a
   specific Rail. Never invent one.
 - **Backbone.md** — a Rail's single source of truth: objectives (`O#`)
@@ -74,8 +83,8 @@ AgentRails/
 | Command | Judgment? | Reads | Produces |
 |---|---|---|---|
 | `agentrails-design` | Yes — only reasoning step | process description (a PRD works well as-is), optional Rails to merge | `<process-name>/context/*.md` (draft) |
-| `agentrails-build` | No — deterministic | `context/{Backbone,Workflow,Readme}.md` | `<process-name>/process-name/SKILL.md` |
-| `agentrails-build-validation` | No — deterministic | `context/{Validation,Backbone}.md` | `<process-name>/process-name-validation/SKILL.md` |
+| `agentrails-build` | No — deterministic | `context/{Backbone,Workflow,Readme}.md` | `<process-name>/process-name/SKILL.md` + `<process-name>/rail.mjs` |
+| `agentrails-build-validation` | No — deterministic | `context/{Validation,Backbone}.md` | `<process-name>/process-name-validation/SKILL.md` + `<process-name>/checks.mjs` |
 
 `agentrails-build` and `agentrails-build-validation` both have a
 **hard prerequisite**: they must scaffold their target `SKILL.md` through

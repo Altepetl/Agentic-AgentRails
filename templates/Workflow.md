@@ -1,12 +1,12 @@
 ---
 title: Workflow — <process-name>
 status: draft
-version: 0.0.1
+version: 0.1.0
 created: <yyyy-mm-dd>
 updated: <yyyy-mm-dd>
 role: Fixed step sequence the executing agent must follow. Steps are derived
   from Backbone.md — the agent must not invent, skip, or reorder steps.
-derived-from: templates/Workflow.md v0.0.1
+derived-from: templates/Workflow.md v0.1.0
 regeneration-rule: Regenerate whenever Backbone.md changes. Validation.md must
   be regenerated afterward, since its checklist is keyed to these steps.
 ---
@@ -28,6 +28,24 @@ from the generated Rail's Workflow.md):
     - Judgment zone — what's explicitly left to the executing agent's
       judgment within this step (may be empty for a fully mechanical step,
       but most steps should have one).
+- Every fixed-core verification carries a verifier kind:
+    - verifier: script — the check is expressible in the assertion
+      vocabulary below, so code (checks.mjs) can verify it. Write the check
+      AS vocabulary assertions, one per line — not as prose a compiler
+      would have to interpret. This is the default to aim for.
+    - verifier: agent — the check genuinely requires semantic judgment.
+      Prose, as concrete as possible. Last resort: it will always be
+      reported as a soft guarantee by process-name-validation.
+  Assertion vocabulary (fixed — do not invent new kinds; if a check can't
+  be expressed here, it's verifier: agent or unresolved ambiguity):
+    exists: <path>
+    not-exists: <path>
+    contains: <path> "<literal>"
+    not-contains: <path> "<literal>"
+    matches: <path> /<regex>/
+    count-at-least: <n> <path> "<literal>"
+  Paths are relative to the Rail bundle root, so output files are
+  addressed as output-<process-name>/...
 - If a step's fixed core can't be stated as verifiable, that's unresolved
   ambiguity — send it back to Backbone.md, don't guess an answer here.
 -->
@@ -38,12 +56,16 @@ from the generated Rail's Workflow.md):
 
 - **Backbone refs**: O#, L#
 - **Fixed core**: <invariant action> — verified by: <concrete check>
+  (verifier: script | agent; if script, write the assertions here, one per
+  line)
 - **Judgment zone**: <what's left to the agent's judgment, if anything>
 
 ### Step 2 — <short step name>
 
 - **Backbone refs**: O#, L#
 - **Fixed core**: <invariant action> — verified by: <concrete check>
+  (verifier: script | agent; if script, write the assertions here, one per
+  line)
 - **Judgment zone**: <what's left to the agent's judgment, if anything>
 
 <!-- add one block per step -->

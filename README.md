@@ -2,9 +2,9 @@
 
 AgentRails turns a documented process into a **Rail**: a guide an LLM agent can
 run, end to end, that fixes the mandatory path (what must always happen, and
-how it's verified) while leaving a zone where the executing model's own
-judgment decides *how* to carry out each step — without anyone rewriting the
-process.
+how it's verified — by code wherever code can verify it) while leaving a zone
+where the executing model's own judgment decides *how* to carry out each step
+— without anyone rewriting the process.
 
 > For the full requirements spec — every concept, every document's exact
 > structure, every state machine, and the rationale behind every naming
@@ -28,6 +28,15 @@ guide, run by an older or newer LLM, follows the exact same path — the result
 within that path can vary with model capability, but the path itself never
 does, and nobody has to rewrite anything to keep it that way.
 
+And the path isn't fixed by prose alone: every check in a Rail is classified
+by **verifier kind**. What code can verify, code verifies (`verifier: script`
+— compiled into a runnable `checks.mjs` that gates each step and that you can
+re-run yourself, model-independent). What genuinely requires semantic judgment
+is checked by an agent and always labeled a soft guarantee (`verifier:
+agent`). The precise promise: **the same verifiable milestones, with the
+largest possible surface verified mechanically, regardless of which model
+runs it.**
+
 That guide is the Rail.
 
 **Comparing or improving a Rail's output across repeated runs is not this
@@ -48,7 +57,15 @@ npx agent-rails install
 ```
 
 This prompts for which target(s) to install into and copies the 3 skills
-into that tool's skills directory. To skip the prompt:
+into that tool's skills directory. For `agentrails-design` specifically, it
+also bundles a copy of this repo's `templates/` directory into that
+installed skill's own `templates/` subdirectory, since `agentrails-design`
+reads the 5 base templates at runtime and needs them to be self-contained
+wherever it ends up installed, without depending on this repo still being
+on disk. (These base templates are AgentRails' own build tooling — not to
+be confused with a Rail's generated `context/` bundle, which is what
+`agentrails-design` *produces* from them, per-process.) To skip the
+prompt:
 
 ```bash
 npx agent-rails install --target claude,cursor
@@ -115,8 +132,9 @@ version-tracked artifact that outlives any single run.
 is the most common way to misread this project:
 
 1. **A Rail** (`context/` + `process-name/SKILL.md` +
-   `process-name-validation/SKILL.md`) — what **AgentRails** builds.
-   AgentRails' own job ends here; see "Anatomy of a Rail" below.
+   `process-name-validation/SKILL.md` + `rail.mjs` + `checks.mjs`) — what
+   **AgentRails** builds. AgentRails' own job ends here; see "Anatomy of a
+   Rail" below.
 2. **`output-process-name/`** (tracking files + whatever the process
    actually produces) — what running a Rail's *own* `process-name` skill
    builds, **afterward**, as a separate act, possibly much later and by a
@@ -131,6 +149,10 @@ reference — but only #1 is AgentRails' own output.
 Running a Rail is not a one-shot pass. Its execution is incremental and resumable
 by design — to survive interruptions (e.g. running out of tokens mid-run), writing
 progress live to a tracking file so a partial run can pick up where it left off.
+All tracking writes go through the generated `rail.mjs` harness (never hand-edited
+by the agent), and each step is gated by `checks.mjs` before the run advances —
+so progress claims are cross-checkable against mechanical evidence, not taken on
+the executing model's word.
 
 Once a pass finishes completely, running the process again is a **clean restart**:
 the user is asked "run it again? previous results will be deleted," and if they
@@ -144,7 +166,9 @@ a discarded one; it only guarantees the same path is followed every time.
 1. **Guides, doesn't dictate the exact "how"** — mandatory steps + hard limits, but
    the agent decides execution details within each step.
 2. **Verifiable, not just descriptive** — each step has a way to confirm it was
-   satisfied before moving on.
+   satisfied before moving on, classified by verifier kind: mechanically
+   verified by code wherever possible, explicitly labeled agent-judged where
+   not.
 3. **Resolves ambiguity explicitly** — when instructions conflict, the guide says
    what wins.
 4. **Has a declared escape point** — when the agent can't comply, it stops and
@@ -224,10 +248,14 @@ The pipeline's entry point. Delivered as the Agent Skill at
   - `/home/Projects/Code/ECCStandards/` — already has a `context/` bundle
     (an existing Rail encoding this org's coding standards), so it's
     treated as a bundle to merge: `standard-builder` inherits from it.
-- **Preconditions**: `templates/Design.md`, `templates/Backbone.md`,
-  `templates/Workflow.md`, `templates/Validation.md`, and
-  `templates/Readme.md` must exist at the AgentRails repo root — this
-  command reads them as the base pattern for every document it produces.
+- **Preconditions**: `Design.md`, `Backbone.md`, `Workflow.md`,
+  `Validation.md`, and `Readme.md` must exist in a `templates/` directory
+  this command can reach — normally `templates/` bundled right next to
+  this skill's own `SKILL.md` (the installer copies it there automatically,
+  see "Installing the AgentRails skills" above), or `templates/` at the
+  AgentRails repo root if running directly from a clone without having
+  installed. This command reads them as the base pattern for every
+  document it produces, and stops if neither location has all 5 files.
 - **Produces**: `<process-name>/context/Design.md`,
   `<process-name>/context/Backbone.md`, `<process-name>/context/Workflow.md`,
   `<process-name>/context/Validation.md`,
@@ -265,9 +293,12 @@ Deterministic. Delivered as the Agent Skill at
 - **Produces**: `<process-name>/process-name/SKILL.md` (the literal folder
   name matches `process-name`, so it can be installed as-is into a
   platform's skills directory) — a runnable skill implementing
-  `Workflow.md`'s fixed step sequence, `ProcessTracking.md` generation, and
-  the 4-phase progressive-execution state machine (§10.2 of `PRD.md`),
-  whose Phase 4 is a clean, destructive restart, not an accumulating one.
+  `Workflow.md`'s fixed step sequence and the 4-phase
+  progressive-execution state machine (§10.2 of `PRD.md`), whose Phase 4
+  is a clean, destructive restart, not an accumulating one — plus
+  `<process-name>/rail.mjs`, the zero-dependency runtime harness that owns
+  every write to `ProcessTracking.md` (`init`/`start`/`finish`), so the
+  executing agent never hand-edits its own progress log.
 - **On an inconsistency** (e.g. a `Workflow.md` step with no traceable
   Backbone citation): stops and reports it rather than silently dropping or
   inventing a fix — that's a defect from the design phase to send back, not
@@ -293,12 +324,20 @@ Deterministic. Delivered as the Agent Skill at
   exist in `Backbone.md`.
 - **Produces**: `<process-name>/process-name-validation/SKILL.md` — a
   runnable skill implementing `Validation.md`'s checklist as checks against
-  `output-process-name/`, `ValidationTracking.md` generation (STEP column
-  seeded from `ProcessTracking.md`), and a state machine mirroring
-  `process-name`'s own resumability logic.
-- **On a checklist item that isn't concretely checkable**: stops and reports
-  it — sends the user back to `agentrails-design` to sharpen it, rather
-  than softening the check to make it pass mechanically.
+  `output-process-name/` (mechanical evidence first, LLM judgment only for
+  `verifier: agent` items, and a tiered final report: mechanically
+  verified / agent-verified / failed), `ValidationTracking.md` generation
+  (STEP column seeded from `ProcessTracking.md`), and a state machine
+  mirroring `process-name`'s own resumability logic — plus
+  `<process-name>/checks.mjs`, the zero-dependency mechanical checker
+  compiled verbatim from the checklist's `verifier: script` items. Run it
+  directly any time (`node checks.mjs`, or `--step N` for a single step)
+  for a model-independent verdict.
+- **On a checklist item that isn't concretely checkable** (or a
+  `verifier: script` item written outside the fixed assertion vocabulary):
+  stops and reports it — sends the user back to `agentrails-design` to
+  sharpen it, rather than softening the check to make it pass
+  mechanically.
 
 ### After both build commands have run
 
@@ -311,9 +350,10 @@ they are what the pipeline produces.
 
 ## Anatomy of a Rail
 
-(See "Two products, two different producers" above — only `context/` and
-the two `SKILL.md` files are AgentRails' own output; `output-process-name/`
-is produced later, by running the Rail, not by AgentRails.)
+(See "Two products, two different producers" above — only `context/`, the
+two `SKILL.md` files, and the two harness scripts are AgentRails' own
+output; `output-process-name/` is produced later, by running the Rail, not
+by AgentRails.)
 
 ```
 <process-name>/
@@ -326,6 +366,10 @@ is produced later, by running the Rail, not by AgentRails.)
 │   │                     workflow was correctly and completely executed
 │   └── Readme.md       — meta-instructions: ambiguity-resolution precedence,
 │                          escalation rule (stop and ask the user)
+├── rail.mjs                        ← runtime harness; owns all writes to
+│                                     ProcessTracking.md (init/start/finish)
+├── checks.mjs                      ← mechanical checker compiled from
+│                                     Validation.md's script items
 ├── output-process-name/            ← runtime output of running the Rail
 │   ├── ProcessTracking.md          — per-step status, incl. which agent ran it
 │   ├── ValidationTracking.md       — validation pass status, same schema
@@ -339,6 +383,9 @@ is produced later, by running the Rail, not by AgentRails.)
 - [skill-creator](https://claude.com/plugins/skill-creator) — `agentrails-build`
   always scaffolds `SKILL.md` packages through skill-creator rather than
   hand-rolling them. This is a hard prerequisite.
+- **Node.js >= 18 on the machine that runs a Rail** — the generated
+  `rail.mjs` and `checks.mjs` are plain, zero-dependency Node scripts
+  invoked by the generated skills (and runnable directly by you).
 - A target platform that supports Agent Skills — see "Installing the
   AgentRails skills" above for the full list of supported targets and
   install paths (Claude Code, Google Antigravity, Cursor, ZCode, Kimi Code

@@ -69,14 +69,33 @@ which it's meant to be rather than assuming.
 
 ## Step 1 — Read the base templates
 
-Read all five files in `templates/` at the AgentRails repo root:
-`Design.md`, `Backbone.md`, `Workflow.md`, `Validation.md`, `Readme.md`.
+Read all five files defining the base document templates: `Design.md`,
+`Backbone.md`, `Workflow.md`, `Validation.md`, `Readme.md`. Their location
+depends on how this skill reached you — check in this order and use the
+first that has all five files:
 
-These define the required frontmatter fields and section skeleton for each
-document type — follow their structure. Each template's own
-`TEMPLATE INSTRUCTIONS` comment block explains what belongs in that section;
-that guidance is for you, the generator, and must not appear in what you
-write out.
+1. **`templates/` right next to this `SKILL.md`** (i.e. inside this skill's
+   own installed directory). This is where they live for a normal
+   installation via `npx agent-rails install` — the installer bundles a
+   copy of the AgentRails repo's `templates/` directory into
+   `agentrails-design`'s own package precisely so this skill is
+   self-contained once installed, with no dependency on the AgentRails repo
+   still being present on disk.
+2. **`templates/` at the AgentRails repo root**, i.e. two directories above
+   this `SKILL.md` (`skills/agentrails-design/SKILL.md` → repo root →
+   `templates/`). This applies only when you are running this skill
+   directly from a cloned AgentRails repo during development/testing,
+   without having gone through the installer.
+
+If neither location contains all five files, **stop and tell the user** —
+this skill cannot draft a Rail's context bundle without them; do not
+improvise a substitute structure.
+
+These templates define the required frontmatter fields and section
+skeleton for each document type — follow their structure. Each template's
+own `TEMPLATE INSTRUCTIONS` comment block explains what belongs in that
+section; that guidance is for you, the generator, and must not appear in
+what you write out.
 
 ## Step 2 — Merge pre-existing Rails, if any were given
 
@@ -121,6 +140,17 @@ Derive the fixed step sequence from Backbone.md. For each step:
   to verify it before moving on — worded so the check gives the same
   answer no matter which model runs it) and **judgment zone** (what's
   explicitly left open to the executing agent's judgment, if anything).
+- Classify the fixed core's verification by **verifier kind**:
+  - `verifier: script` — the check is expressible in the assertion
+    vocabulary (see `templates/Workflow.md`'s instructions: `exists`,
+    `not-exists`, `contains`, `not-contains`, `matches`,
+    `count-at-least`). Write it AS vocabulary assertions, one per line —
+    this is what lets `checks.mjs` verify it mechanically later, with no
+    model involved. Aim for this whenever the check is about files,
+    contents, patterns, or counts.
+  - `verifier: agent` — the check genuinely requires semantic judgment.
+    Prose, as concrete as possible. Last resort: it will always be
+    reported as a soft guarantee at validation time.
 
 A step whose fixed core can't be phrased as a concrete check is unresolved
 ambiguity — send it back to Backbone.md and sharpen the underlying
@@ -131,15 +161,28 @@ objective rather than writing a vague verification here.
 Derive a checklist from Backbone.md and Workflow.md. Each item:
 - Cites the Backbone O#/L# ref(s) it checks and the Workflow step(s) it
   validates.
+- Is classified by **verifier kind**, same rule as in 3b: `script` items
+  are written as assertion-vocabulary entries (an `Assertions:` block),
+  never as prose a compiler would have to interpret; `agent` items are
+  concrete prose.
 - States a concrete pass/fail condition checkable against the eventual
   output in `output-process-name/` — not a restatement of the objective.
   ("O3 was addressed" is not a check; "the deliverable contains a section
   titled X with at least one entry per Y" is.)
+- For hard limits (L#): any limit that is mechanically expressible (a
+  forbidden pattern, path, or command — think lint rule, usually
+  `not-contains` / `not-exists`) MUST get a `verifier: script` item.
+  Validation must be able to catch a violation mechanically, not just
+  confirm objectives were met.
 
 Every O#/L# touched by Workflow.md should be covered by at least one
 checklist item — if one isn't, that objective has no way to be confirmed,
 which is worth flagging to the user even if you can construct a plausible
-check yourself.
+check yourself. And every Workflow step with a `verifier: script`
+verification must be mirrored by at least one `verifier: script` checklist
+item citing that step — otherwise the per-step gate
+(`checks.mjs --step N`) has nothing mechanical to run for that step and
+silently degrades to agent judgment.
 
 ### 3d. Design.md
 

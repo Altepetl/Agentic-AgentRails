@@ -136,8 +136,8 @@ required behavior, with:
   objectives) plus when to trigger — e.g. "runs the <process-name>
   process end to end, progressively and resumably; use when the user wants
   to execute, continue, or restart the <process-name> process."
-- **output path**: `<process-name>/SKILL.md`, alongside the `context/` and
-  `output-process-name/` directories for this Rail.
+- **output path**: `<process-name>/process-name/SKILL.md`, alongside the
+  `context/` and `output-process-name/` directories for this Rail.
 
 Let skill-creator handle the actual `SKILL.md` scaffolding and packaging
 conventions — your job was composing the correct, complete content, not

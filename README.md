@@ -109,6 +109,23 @@ The Rail is not a byproduct or an intermediate file — **it is the product.** W
 AgentRails ships, for any given process, is a Rail: a reusable, inheritable,
 version-tracked artifact that outlives any single run.
 
+## Two products, two different producers — don't confuse them
+
+"The process" gets used for two different things here, and mixing them up
+is the most common way to misread this project:
+
+1. **A Rail** (`context/` + `process-name/SKILL.md` +
+   `process-name-validation/SKILL.md`) — what **AgentRails** builds.
+   AgentRails' own job ends here; see "Anatomy of a Rail" below.
+2. **`output-process-name/`** (tracking files + whatever the process
+   actually produces) — what running a Rail's *own* `process-name` skill
+   builds, **afterward**, as a separate act, possibly much later and by a
+   different model. AgentRails never writes to this directory and doesn't
+   know it exists until `process-name` creates it.
+
+The "Anatomy of a Rail" diagram below shows both together in one tree, for
+reference — but only #1 is AgentRails' own output.
+
 ## Progressive execution: what happens when you run a Rail
 
 Running a Rail is not a one-shot pass. Its execution is incremental and resumable
@@ -293,6 +310,10 @@ validate the process. Neither is part of the AgentRails pipeline itself;
 they are what the pipeline produces.
 
 ## Anatomy of a Rail
+
+(See "Two products, two different producers" above — only `context/` and
+the two `SKILL.md` files are AgentRails' own output; `output-process-name/`
+is produced later, by running the Rail, not by AgentRails.)
 
 ```
 <process-name>/

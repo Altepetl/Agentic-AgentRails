@@ -27,6 +27,6 @@ node_modules/
 .claude/settings.local.json
 
 # Local sandbox for Rails built here during development/testing.
-# Real Rails belong in their own repos, not inside AgentRefinery — see
+# Real Rails belong in their own repos, not inside AgentRails — see
 # CONTRIBUTE.md. Anything under sandbox/ is throwaway.
 /sandbox/

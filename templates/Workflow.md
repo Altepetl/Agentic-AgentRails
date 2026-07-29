@@ -6,7 +6,7 @@ created: <yyyy-mm-dd>
 updated: <yyyy-mm-dd>
 role: Fixed step sequence the executing agent must follow. Steps are derived
   from Backbone.md — the agent must not invent, skip, or reorder steps.
-derived-from: Backbone.md <version>
+derived-from: templates/Workflow.md v0.0.1
 regeneration-rule: Regenerate whenever Backbone.md changes. Validation.md must
   be regenerated afterward, since its checklist is keyed to these steps.
 ---

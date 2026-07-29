@@ -7,7 +7,7 @@ updated: <yyyy-mm-dd>
 role: Big-picture overview and diagrams for human/agent orientation. Descriptive
   only — not authoritative. If this document ever conflicts with Backbone.md,
   Backbone.md wins (see Readme.md's precedence rule).
-derived-from: Backbone.md <version>
+derived-from: templates/Design.md v0.0.1
 regeneration-rule: Regenerate whenever the process's scope or shape changes
   enough that the overview or diagrams would mislead a new reader.
 ---

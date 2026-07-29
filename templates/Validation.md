@@ -7,7 +7,7 @@ updated: <yyyy-mm-dd>
 role: Checklist that confirms a Workflow.md run was correctly and completely
   executed. Consumed by process-name-validation to check output-process-name/
   against Backbone.md's objectives and hard limits.
-derived-from: Backbone.md <version>, Workflow.md <version>
+derived-from: templates/Validation.md v0.0.1
 regeneration-rule: Regenerate whenever Backbone.md or Workflow.md changes.
 ---
 
@@ -25,9 +25,9 @@ from the generated Rail's Validation.md):
 - Hard limits (L#) get checked too — validation must be able to catch a
   violation, not just confirm objectives were met.
 - This document only defines what to check. It does not itself track status —
-  that's ValidationTracking.md's job at runtime (seeded from this checklist's
-  item list, one row per item, per the state machine in Readme.md /
-  DESIGN-NOTES.md).
+  that's ValidationTracking.md's job at runtime (STEP column seeded from
+  ProcessTracking.md, one row per process step, not per checklist item, so
+  both tracking files stay aligned — per the state machine in PRD.md §10.3).
 -->
 
 ## Checklist

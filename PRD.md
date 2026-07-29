@@ -120,7 +120,38 @@ the output of using the product. The product is the guide that can be
 handed to a better model next month and get a better result on the exact
 same path, without anyone touching its definition.
 
-### 2.4 Running a Rail is incremental, not one-shot
+### 2.4 Two different products, two different producers — do not conflate them
+
+The word "process" gets used for two different things in this project, and
+confusing them is the single most common misreading of this spec:
+
+1. **A Rail** — `<process-name>/context/` (5 documents) +
+   `<process-name>/process-name/SKILL.md` +
+   `<process-name>/process-name-validation/SKILL.md`. This is **AgentRails'
+   product** (§2.3). It is produced by AgentRails' 3 commands (§6, §7), and
+   it does not change afterward except by deliberately re-running
+   `agentrails-design`, `agentrails-build`, or `agentrails-build-validation`.
+2. **`output-process-name/`** — `ProcessTracking.md`, `ValidationTracking.md`,
+   and whatever deliverables the process actually produces (a codebase, a
+   document set, anything). This is **a Rail's product**, not AgentRails'
+   product. It only comes into existence after a separate act: a human or
+   agent invoking the Rail's already-built `process-name` skill (§7.4) and
+   letting it run. AgentRails itself never writes to `output-process-name/`
+   and has no knowledge of its contents — that directory doesn't even exist
+   until `process-name` creates it, at a point where AgentRails is no
+   longer involved at all.
+
+Put differently: AgentRails builds the guide (#1); running the guide is
+what builds the deliverables (#2), and that running happens entirely
+outside of AgentRails, at a later time, by a separately invoked skill,
+possibly with a different model, possibly run more than once (§2.5). §9's
+directory layout shows both together, for reference, in one tree — but
+they are produced by two different actors at two different times. Do not
+read that one diagram as "the directory structure AgentRails outputs" —
+only the `context/` subtree and the two `SKILL.md` packages are that;
+`output-process-name/` is not.
+
+### 2.5 Running a Rail is incremental, not one-shot
 
 Running `process-name` (the skill a Rail's `context/` compiles down to) is
 not all-or-nothing. Execution is incremental and resumable by design — so
@@ -165,7 +196,7 @@ decided.
 2. **Split back into two sibling projects: AgentRails (this repo) and
    AgentRefinery (separate repo).** AgentRails owns the mechanism only —
    producing a Rail and running it consistently, with a plain, destructive
-   re-run (§2.4, §10.2 Phase 4): no cross-run memory, no changelog, no
+   re-run (§2.5, §10.2 Phase 4): no cross-run memory, no changelog, no
    "is this better" judgment baked into the generated skill. AgentRefinery
    is a separate project that consumes AgentRails' generated skills and
    output as input, and owns the entirely separate concern of comparing
@@ -558,7 +589,16 @@ regeneration-rule: <when/how this doc must be regenerated if its source changes>
   (in use) → `deprecated`.
 - `derived-from` does double duty: it points to the base template
   pattern, and/or to a parent Rail's document when built via inheritance
-  (§11) — potentially both at once.
+  (§11) — potentially both at once. Every one of the 5 base templates in
+  `templates/` therefore sets `derived-from: templates/<Doc>.md v0.0.1` —
+  pointing at itself — since that is the only lineage that exists before
+  any Rail is generated from it; a generated Rail's own documents add the
+  parent-Rail reference on top of that when built via inheritance. Do
+  **not** use `derived-from` to record a document's *logical* dependency
+  on another document within the same bundle (e.g. Workflow.md depending
+  on Backbone.md) — that traceability is already carried by each
+  document's own `role` line, its `regeneration-rule`, and the explicit
+  Backbone-ID citations required in §8.3/§8.4.
 
 ### 8.2 `Backbone.md` — single source of truth
 
@@ -701,6 +741,12 @@ edit.
 ---
 
 ## 9. Anatomy of a Rail — full directory layout
+
+This tree shows the Rail bundle and, for reference, where a completed run's
+output lands — but these come from two different producers at two different
+times (§2.4): AgentRails produces `context/`, `process-name/SKILL.md`, and
+`process-name-validation/SKILL.md`; running the already-built
+`process-name` skill produces `output-process-name/`, afterward, on its own.
 
 ```
 <process-name>/

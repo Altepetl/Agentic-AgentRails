@@ -5,8 +5,13 @@ this file — its own tooling, documents, and conventions.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/), and this
 project uses `MAJOR.MINOR.PATCH`-style versioning once a first release is
-tagged. Nothing has been released yet — everything so far is under
-`[Unreleased]`.
+tagged. Nothing has been **released** yet — no version has been published
+to npm or tagged in Git — so everything so far is under `[Unreleased]`,
+even though `package.json` and `PRD.md` already carry an in-development
+version number (`0.1.0`). That number becomes this file's first real
+version heading (`## [0.1.0]`, with a release date) the moment it's
+actually tagged/published — until then, `0.1.0` is a target, not a claim
+that a release happened.
 
 ## [Unreleased]
 

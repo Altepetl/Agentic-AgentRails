@@ -128,8 +128,9 @@ Hand skill-creator the composed spec from Step 2, with:
   checklist) plus when to trigger — e.g. "validates a completed or
   in-progress <process-name> run against its checklist; use when the user
   wants to check, review, or confirm the output of <process-name>."
-- **output path**: `<process-name>-validation/SKILL.md`, alongside
-  `context/`, `output-process-name/`, and `process-name/` for this Rail.
+- **output path**: `<process-name>/process-name-validation/SKILL.md`,
+  alongside `context/`, `output-process-name/`, and `process-name/` for
+  this Rail.
 
 ## Step 4 — Confirm and hand back
 

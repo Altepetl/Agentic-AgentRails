@@ -46,6 +46,12 @@ from the generated Rail's Workflow.md):
     count-at-least: <n> <path> "<literal>"
   Paths are relative to the Rail bundle root, so output files are
   addressed as output-<process-name>/...
+  Matching rules (see PRD.md §8.7): contains/not-contains/count-at-least
+  are case-sensitive exact-substring matches, no whitespace
+  normalization; matches tests one single line at a time (a pattern
+  cannot span multiple lines) as a case-sensitive Node.js RegExp with no
+  implicit flags — write /<regex>/i inline if a check needs
+  case-insensitivity.
 - If a step's fixed core can't be stated as verifiable, that's unresolved
   ambiguity — send it back to Backbone.md, don't guess an answer here.
 -->

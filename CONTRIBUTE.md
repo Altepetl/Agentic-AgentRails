@@ -21,10 +21,34 @@ or anything resembling a changelog of improvement passes to a generated
    (documentation & language standards) — most contribution mistakes are
    violations of a rule already settled and written down there, not new
    judgment calls.
-3. If you're changing a concept, a command's behavior, or terminology,
+3. If you're an AI agent doing the contributing, also read whichever of
+   `CLAUDE.md` / `AGENTS.md` matches your tooling (see "Two agent-guidance
+   files" below) — they're not part of the product, but they're where
+   repo-specific operating rules live.
+4. If you're changing a concept, a command's behavior, or terminology,
    treat `PRD.md` as the file you update first — everything else
    (`README.md`, `skills/*/SKILL.md`, `templates/*.md`) must match it, not
    the other way around.
+
+## Two agent-guidance files: `CLAUDE.md` and `AGENTS.md`
+
+Neither is part of what AgentRails produces — they don't ship in a Rail,
+aren't installed by `bin/cli.js`, and carry no product logic. They exist
+purely to tell an AI agent how to work *in this repository*, the same
+role `CONTRIBUTE.md` plays for a human contributor:
+
+- **`CLAUDE.md`** — guidance specifically for Claude Code.
+- **`AGENTS.md`** — the vendor-neutral counterpart, for agents that don't
+  read `CLAUDE.md`, following the open `AGENTS.md` convention used across
+  other AI coding tools.
+
+They deliberately overlap (same rules, different length/structure) rather
+than one deferring to the other, so either can be read standalone. That
+means **both must be updated together** whenever a pipeline-level change,
+naming change, or new architectural decision needs to be reflected in
+agent-facing guidance — treat them as a pair, the same way the three
+`skills/*/SKILL.md` files are treated as a pair/trio elsewhere in this
+document.
 
 ## Standing rules (see `PRD.md` §14 for the full rationale)
 
@@ -72,8 +96,9 @@ grep -rn "<old-term>" --include="*.md" .
 
 Files that typically need touching together for any pipeline-level change:
 `README.md`, `PRD.md`, `DESIGN-NOTES.md` (only append a new note; don't
-rewrite its history), and all three `skills/*/SKILL.md` files (they
-cross-reference each other by name).
+rewrite its history), `CLAUDE.md` and `AGENTS.md` (see above — updated as
+a pair), and all three `skills/*/SKILL.md` files (they cross-reference
+each other by name).
 
 ## Modifying `templates/*.md`
 
@@ -95,6 +120,13 @@ shared frontmatter fields). If you change a template's structure:
   to scaffold their target `SKILL.md` packages through the `skill-creator`
   skill — this is a hard prerequisite (`PRD.md` §13), not a convenience.
   Don't add a hand-rolled packaging path, even as a fallback.
+- `agentrails-build` also generates `rail.mjs` (the runtime harness) and
+  `agentrails-build-validation` also generates `checks.mjs` (the
+  mechanical checker) — see `PRD.md` §4.1/§7.2/§7.3. Both are plain,
+  zero-dependency Node scripts, generated directly by the skill, not Agent
+  Skills themselves — they must **not** go through `skill-creator`. Don't
+  conflate "hard prerequisite for `SKILL.md` packaging" with "everything
+  this skill produces."
 - Keep the division of labor intact: `agentrails-design` is the only
   step that does LLM reasoning / resolves ambiguity; the two build
   commands are mechanical transformations that trust their inputs
@@ -119,6 +151,14 @@ generated `context/` bundle actually holds up:
   `Validation.md` checklist item?
 - Is every checklist item a concrete pass/fail condition, not a
   restatement of the objective?
+- Is every `verifier: script` step verification mirrored by at least one
+  `verifier: script` checklist item citing that step (`PRD.md` §8.4's
+  mirroring rule), so `checks.mjs --step N` has something mechanical to
+  run for every step?
+- Does every `verifier: script` item use only the fixed assertion
+  vocabulary (`PRD.md` §8.7: `exists`, `not-exists`, `contains`,
+  `not-contains`, `matches`, `count-at-least`), never prose a compiler
+  would have to interpret?
 
 Build any test Rails under `/sandbox/` at the repo root (already
 gitignored) — never commit a generated Rail into this repo. A Rail is a

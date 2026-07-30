@@ -941,12 +941,27 @@ them from its own location.
 - `exists: <path>` — the file exists.
 - `not-exists: <path>` — the file does not exist.
 - `contains: <path> "<literal>"` — the file's contents include the
-  literal string.
+  literal string, matched case-sensitively, exact substring (no
+  whitespace normalization).
 - `not-contains: <path> "<literal>"` — the file's contents do not include
-  the literal string (the workhorse for hard-limit linting).
-- `matches: <path> /<regex>/` — some line of the file matches the regex.
+  the literal string (the workhorse for hard-limit linting). Same literal
+  matching rule as `contains`.
+- `matches: <path> /<regex>/` — some **single line** of the file matches
+  the regex (the file is read and tested line by line, so a pattern
+  cannot span multiple lines). The regex is a Node.js `RegExp`, evaluated
+  case-sensitively with no implicit flags — if a check needs
+  case-insensitivity or another flag, write it inline in the pattern
+  (`/<regex>/i`) exactly as `checks.mjs` will construct
+  `new RegExp("<regex-body>", "<flags>")` from it.
 - `count-at-least: <n> <path> "<literal>"` — the literal occurs at least
-  `<n>` times in the file.
+  `<n>` times in the file, counting non-overlapping occurrences, same
+  literal matching rule as `contains`.
+
+Pinning this down matters because compiling an assertion into `checks.mjs`
+is supposed to be lookup-and-substitute (§7.3), never interpretation — two
+different `agentrails-build-validation` runs, possibly by different
+models, must compile the same `Validation.md` line into behaviorally
+identical code.
 
 ---
 
@@ -1019,7 +1034,12 @@ Both `ProcessTracking.md` and `ValidationTracking.md` (in
 - **STATUS**: `✅` done, `❌` error/blocked, *(empty)* pending.
 - **AGENT**: which model/agent executed that step — useful for debugging
   a run and for comparing, after the fact, how different models handled
-  the same fixed path.
+  the same fixed path. Unlike STATUS/START/END (harness-stamped by
+  `rail.mjs`/`checks.mjs` and cross-checked against mechanical evidence
+  where a `script` check exists, §4.1), **AGENT is self-reported** — the
+  harness has no independent way to confirm which model actually called
+  it. Treat it as a debugging label, not a verified claim; this is part
+  of the honest ceiling documented in §4.1/§17.
 - **STEP**: short step name.
 - **DETAILS**: problems found / notes; empty if none.
 - **START / END**: timestamps.
@@ -1225,6 +1245,16 @@ AgentRails' own 3 commands — it has no role in installing a generated Rail's
 `process-name`/`process-name-validation` skills, which are installed the
 same manual way as any other Agent Skill package.
 
+**What actually ships to npm**: `package.json`'s `files` array is
+`bin/`, `skills/`, `templates/`, `README.md`, `PRD.md`, `LICENSE` — this
+is a deliberate, minimal set (what an installer running via
+`npx agent-rails install` needs at runtime), not an oversight.
+`AGENTS.md`, `CLAUDE.md`, `CONTRIBUTE.md`, `DESIGN-NOTES.md`, and
+`Changelog.md` are intentionally excluded: they guide contributors
+working in the AgentRails repo itself, not the installer or anyone
+consuming the published package, so they add nothing for an npm
+consumer and are left out to keep the package small.
+
 ---
 
 ## 13. Minimum requirements / hard prerequisites
@@ -1288,6 +1318,11 @@ AgentRails/
 ├── README.md                              ← pitch + user manual + PRD pointer
 ├── PRD.md                                 ← this file — full requirements spec
 ├── DESIGN-NOTES.md                        ← working design log (session history)
+├── Changelog.md                           ← this repo's own release history
+├── CONTRIBUTE.md                          ← contribution conventions
+├── CLAUDE.md                              ← agent guidance, Claude Code-specific
+├── AGENTS.md                              ← agent guidance, vendor-neutral counterpart to CLAUDE.md
+├── LICENSE                                ← MIT, Altepetl
 ├── skills/
 │   ├── agentrails-design/SKILL.md
 │   ├── agentrails-build/SKILL.md
@@ -1306,7 +1341,11 @@ This is the **builder repo** — it is not itself a Rail. It produces
 Rails. Nothing in this repo is process-specific; `templates/` and
 `skills/` are the fixed tooling, and every `<process-name>/` bundle it
 generates lives outside this structure (wherever the user directs
-`agentrails-design` to write it).
+`agentrails-design` to write it). `CLAUDE.md` and `AGENTS.md` are not
+part of that product either — they carry no product logic and are never
+installed or shipped in a Rail; they exist only to guide an AI agent
+working in this repo, the same role `CONTRIBUTE.md` plays for a human
+contributor (see `CONTRIBUTE.md`, "Two agent-guidance files").
 
 ---
 

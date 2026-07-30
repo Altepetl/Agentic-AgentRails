@@ -37,6 +37,12 @@ from the generated Rail's Validation.md):
     count-at-least: <n> <path> "<literal>"
   Paths are relative to the Rail bundle root (output files:
   output-<process-name>/...).
+  Matching rules (see PRD.md §8.7): contains/not-contains/count-at-least
+  are case-sensitive exact-substring matches, no whitespace
+  normalization; matches tests one single line at a time (a pattern
+  cannot span multiple lines) as a case-sensitive Node.js RegExp with no
+  implicit flags — write /<regex>/i inline if a check needs
+  case-insensitivity.
 - Hard limits (L#) get checked too — validation must be able to catch a
   violation, not just confirm objectives were met. An L# that is
   mechanically expressible (a forbidden pattern, path, or command — treat

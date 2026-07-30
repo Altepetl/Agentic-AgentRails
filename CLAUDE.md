@@ -1,6 +1,12 @@
 # CLAUDE.md
 
-Guidance for Claude Code (or any agent) working in this repository.
+Guidance for Claude Code (or any agent) working in this repository. This
+file is Claude Code-specific; **`AGENTS.md`** at the repo root is the
+vendor-neutral counterpart for agents that don't read `CLAUDE.md` (it
+follows the open `AGENTS.md` convention). The two overlap deliberately —
+`AGENTS.md` is longer and more structured, this one is shorter — and both
+must be updated together for any pipeline-level or terminology change; see
+`CONTRIBUTE.md`.
 
 ## What this repo is
 
